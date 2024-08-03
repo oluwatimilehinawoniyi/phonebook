@@ -1,10 +1,13 @@
 const express = require("express");
-const app = express();
 const morgan = require("morgan");
+const cors = require("cors");
+
+const app = express();
 app.use(express.json());
 app.use(morgan("tiny"));
-const PORT = 3001;
-
+app.use(cors());
+const PORT = process.env.PORT || 3001;
+console.log("Port:", PORT);
 
 let phonebook = [
   {
@@ -58,6 +61,7 @@ morgan.token("body", function (request, response) {
 
 app.use((request, response, next) => {
   if (request.method === "POST") {
+    console.log("Body:  ", request.body);
     morgan(bodyFormat)(request, response, next);
   } else {
     next();
