@@ -1,40 +1,21 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const Phonebook = require("./models/phonebook");
 
 const app = express();
 app.use(express.json());
 app.use(morgan("tiny"));
 app.use(cors());
 app.use(express.static("dist"));
-const PORT = process.env.PORT || 3001;
-console.log("Port:", PORT);
 
-let phonebook = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: "2",
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
+const PORT = process.env.PORT;
 
 app.get("/api/persons", (request, response) => {
-  response.json(phonebook);
+  Phonebook.find({}).then((phonebook) => {
+    response.json(phonebook);
+  });
 });
 
 app.get("/info", (request, response) => {
@@ -46,14 +27,9 @@ app.get("/info", (request, response) => {
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  const person = phonebook.find((person) => person.id === id);
-
-  if (!person) {
-    response.status(404).end();
-  } else {
+  Phonebook.findById(request.params.id).then((person) => {
     response.json(person);
-  }
+  });
 });
 
 morgan.token("body", function (request, response) {
@@ -79,16 +55,14 @@ app.post("/api/persons", (request, response) => {
     return response.status(400).json({ error: "Name or number is missing" });
   }
 
-  const existingName = phonebook.find((p) => p.name === person.name);
+  const newPerson = new Phonebook({
+    name: person.name,
+    number: person.number,
+  });
 
-  if (existingName) {
-    return response.status(400).json({ error: "Name must be unique" });
-  }
-
-  const id = Math.floor(Math.random() * 1000).toString();
-  const newPerson = { id, name: person.name, number: person.number };
-  phonebook = phonebook.concat(newPerson);
-  response.json(phonebook);
+  newPerson.save().then((person) => {
+    response.json(person);
+  });
 });
 
 app.delete("/api/persons/:id", (request, response) => {
